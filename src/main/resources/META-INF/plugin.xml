@@ -1,0 +1,103 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>com.wrike.sprinter</id>
+
+    <!-- Public plugin name should be written in Title Case.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+    <name>Sprinter</name>
+
+    <version>1.0.0</version>
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <vendor>Wrike</vendor>
+
+    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+         Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+    <description><![CDATA[
+    <b>Problem it tries to solve:</b> long test initialization step (when using spring for example)<br>
+    <b>How does this plugin solve the problem:</b> does not shut down JVM after tests are completed, run next ones in launched jvm. For active development or debugging hotswap features can be utilized.<br>
+
+    <b>How does it work:</b>
+    <ol>
+        <li>Find test you want to run.</li>
+        <li>Click on run test button near the line counter. You should see “Run in Launched JVM” option. Click on it.  Firstly, it will launch JVM with debugger and after that launch test itself.</li>
+        <li>If you click it again after tests are completed
+        <ol>
+            <li>Incremental compile + hotswap will happen</li>
+            <li>Tests are executed without spring context refresh. Time is saved!</li>
+        </ol>
+        </li>
+    </ol>
+
+    <b>This plugin assumes, that you are using DCEVM with HotSwapAgent.</b><br>
+    To install it with JVM-17 and HotSwapAgent use this <a href="https://github.com/HotswapProjects/HotswapAgent/blob/master/README.md">instruction</a>
+    Please, check that hotswap-agent.jar is accessible exactly under this path <JVM>/lib/hotswap/hotswap-agent.jar
+  ]]></description>
+
+    <!-- Product and plugin compatibility requirements.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>TestNG-J</depends>
+
+    <extensionPoints>
+        <extensionPoint name="testFrameworkForRunningInSharedJVM"
+                        interface="com.wrike.sprinter.frameworks.TestFrameworkForRunningInSharedJVM"/>
+    </extensionPoints>
+
+    <!-- Extension points defined by the plugin.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+        <runLineMarkerContributor language="JAVA" implementationClass="com.wrike.sprinter.SameJvmRunLineMarkerContributor"/>
+        <configurationType implementation="com.wrike.sprinter.SharedJvmConfigurationType"/>
+        <runConfigurationProducer implementation="com.wrike.sprinter.SharedJvmConfigurationProducer"/>
+
+        <projectService serviceInterface="com.wrike.sprinter.SharedJvmExecutorService"
+                        serviceImplementation="com.wrike.sprinter.SharedJvmExecutorServiceImpl"/>
+
+        <projectService serviceImplementation="com.wrike.sprinter.settings.SharedJvmSettingsState"/>
+        <projectService serviceInterface="com.wrike.sprinter.settings.ConfigurationsWithHotswapAgentService"
+                        serviceImplementation="com.wrike.sprinter.settings.ConfigurationsWithHotswapAgentServiceImpl"/>
+
+        <projectService serviceImplementation="com.wrike.sprinter.settings.ConfigurationsWithHotswapAgentSettingsState"/>
+        <projectService serviceInterface="com.wrike.sprinter.HotswapAgentJavaArgumentsProvider"
+                        serviceImplementation="com.wrike.sprinter.HotswapAgentJavaArgumentsProviderImpl"/>
+        <projectConfigurable
+            parentId="tools"
+            instance="com.wrike.sprinter.settings.SharedJvmSettingsConfigurable"
+            id="com.wrike.sprinter.settings.SharedJvmSettingsConfigurable"
+            displayName="Shared JVM Settings"/>
+        <java.programPatcher implementation="com.wrike.sprinter.HotswapAgentVMParametersPatcher"/>
+
+        <projectService serviceImplementation="com.wrike.sprinter.settings.ModulesWithHotSwapAgentPluginsSettingsState"/>
+        <projectService serviceInterface="com.wrike.sprinter.settings.ModulesWithHotSwapAgentPluginsService"
+                        serviceImplementation="com.wrike.sprinter.settings.ModulesWithHotSwapAgentPluginsServiceImpl"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="com.wrike.sprinter">
+        <testFrameworkForRunningInSharedJVM implementation="com.wrike.sprinter.frameworks.testng.TestNGForRunningInSharedJVM"/>
+    </extensions>
+
+    <projectListeners>
+        <listener class="com.wrike.sprinter.settings.ConfigurationChangeListener"
+                  topic="com.intellij.execution.RunManagerListener"/>
+        <listener class="com.wrike.sprinter.settings.ModuleChangeListener"
+                  topic="com.intellij.openapi.project.ModuleListener"/>
+    </projectListeners>
+    <actions>
+        <action id="RunTestsInExistingJvm" class="com.wrike.sprinter.RunTestsInExistingJvmAction">
+            <keyboard-shortcut first-keystroke="shift alt a" keymap="$default"/>
+            <add-to-group group-id="RunContextGroupInner" anchor="after" relative-to-action="DebugClass"/>
+        </action>
+        <action id="RunPreviousTestsInExistingJvm" class="com.wrike.sprinter.RunPreviousTestsInExistingJvmAction">
+            <keyboard-shortcut first-keystroke="shift alt z" keymap="$default"/>
+        </action>
+        <action id="CompileModulesForRunningConfigurations"
+                class="com.wrike.sprinter.CompileModulesForRunningConfigurationsAction">
+            <add-to-group group-id="Java.BuildMenu" anchor="after" relative-to-action="MakeModule"/>
+            <keyboard-shortcut first-keystroke="shift alt r" keymap="$default"/>
+        </action>
+    </actions>
+</idea-plugin>
