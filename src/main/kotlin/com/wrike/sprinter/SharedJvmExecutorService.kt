@@ -30,7 +30,7 @@ import com.intellij.task.ProjectTaskManager
 import com.intellij.ui.content.ContentManager
 import com.intellij.util.concurrency.AppExecutorUtil
 import com.wrike.sprinter.frameworks.AbstractSharedJvmProcess
-import com.wrike.sprinter.frameworks.TestFrameworkId
+import com.wrike.sprinter.frameworks.TestFrameworkForRunningInSharedJVM
 import com.wrike.sprinter.frameworks.testFrameworkForRunningInSharedJVMExtensionPoint
 import java.net.ServerSocket
 import java.util.concurrent.atomic.AtomicInteger
@@ -40,7 +40,7 @@ interface SharedJvmExecutorService : Disposable {
         process: OSProcessHandler,
         serverSocket: ServerSocket,
         executor: Executor,
-        testFrameworkId: TestFrameworkId
+        testFramework: TestFrameworkForRunningInSharedJVM
     )
 
     fun isSharedJvmProcessExecuted(): Boolean
@@ -62,16 +62,15 @@ class SharedJvmExecutorServiceImpl(
     private var sharedJvmProcess: AbstractSharedJvmProcess? = null
     private var lastExecutedConfiguration: JavaTestConfigurationBase? = null
 
-    override fun saveSharedJvmProcess(process: OSProcessHandler,
-                                      serverSocket: ServerSocket,
-                                      executor: Executor,
-                                      testFrameworkId: TestFrameworkId) {
+    override fun saveSharedJvmProcess(
+        process: OSProcessHandler,
+        serverSocket: ServerSocket,
+        executor: Executor,
+        testFramework: TestFrameworkForRunningInSharedJVM
+    ) {
         check(sharedJvmProcess == null)
-        val applicableTestFramework = testFrameworkForRunningInSharedJVMExtensionPoint.extensionList.find {
-            it.frameworkId == testFrameworkId
-        } ?: throw IllegalStateException("Test framework with id($testFrameworkId) is not found")
-        sharedJvmProcess = applicableTestFramework.wrapSharedJvmProcess(process, serverSocket, executor).also {
-            process.addProcessListener(object: ProcessAdapter() {
+        sharedJvmProcess = testFramework.wrapSharedJvmProcess(process, serverSocket, executor).also {
+            process.addProcessListener(object : ProcessAdapter() {
                 override fun processTerminated(event: ProcessEvent) {
                     sharedJvmProcess = null
                 }
@@ -125,8 +124,10 @@ class SharedJvmExecutorServiceImpl(
         return Pair(areRunningDescriptorsAppropriate, allDescriptors)
     }
 
-    private fun destroyAllDescriptorsAndDo(descriptors: Collection<RunContentDescriptor>,
-                                           action: () -> Unit) {
+    private fun destroyAllDescriptorsAndDo(
+        descriptors: Collection<RunContentDescriptor>,
+        action: () -> Unit
+    ) {
         val terminatedCounter = AtomicInteger(0)
         descriptors.forEach {
             it.processHandler!!.addProcessListener(object : ProcessAdapter() {
@@ -141,12 +142,14 @@ class SharedJvmExecutorServiceImpl(
     }
 
     private fun startupProcessAndExecuteConfiguration(
-        configuration: JavaTestConfigurationBase,
+        configurationToExecute: JavaTestConfigurationBase,
         context: ConfigurationContext,
         project: Project,
     ) {
         val configurationProducer = RunConfigurationProducer.getInstance(SharedJvmConfigurationProducer::class.java)
-        val sharedJvmConfiguration = configurationProducer.findOrCreateConfigurationFromContext(context) ?: configurationProducer.getConfigurationFromConfigurationToExecute(configuration)
+        val sharedJvmConfiguration = configurationProducer.findOrCreateConfigurationFromContext(context) ?: configurationProducer.getConfigurationFromConfigurationToExecute(configurationToExecute)
+        val configuration = sharedJvmConfiguration.configurationSettings.configuration as SharedJvmConfiguration
+        configuration.initialConfiguration = configurationToExecute
         val runManager = RunManager.getInstance(project)
         val executionEnvironment = ExecutionUtil.createEnvironment(
             DefaultDebugExecutor.getDebugExecutorInstance(),
@@ -157,14 +160,11 @@ class SharedJvmExecutorServiceImpl(
             ?.build() ?: return
         sharedJvmConfiguration.onFirstRun(context) {
             runManager.setTemporaryConfiguration(sharedJvmConfiguration.configurationSettings)
-            if (runManager.shouldSetRunConfigurationFromContext()) {
-                runManager.selectedConfiguration = sharedJvmConfiguration.configurationSettings
-            }
             ProgramRunnerUtil.executeConfigurationAsync(executionEnvironment, true, true) {
                 val debuggerSession = DebuggerManagerEx.getInstanceEx(project).context.debuggerSession
                 if (debuggerSession == null || debuggerSession.isStopped) return@executeConfigurationAsync
                 val contentManager = debuggerSession.xDebugSession?.ui?.contentManager ?: return@executeConfigurationAsync
-                executeConfiguration(configuration, contentManager)
+                executeConfiguration(configurationToExecute, contentManager)
             }
         }
     }
@@ -190,7 +190,7 @@ class SharedJvmExecutorServiceImpl(
             val buildTask = projectTaskManager.createModulesBuildTask(configuration.modules, true, true, false)
             val buildContext = ProjectTaskContext(buildTask)
                 .withUserData(HotSwapUIImpl.SKIP_HOT_SWAP_KEY, false)
-                .withUserData(hotswapStatusListenerKey, object: HotSwapStatusListener {
+                .withUserData(hotswapStatusListenerKey, object : HotSwapStatusListener {
                     override fun onSuccess(sessions: MutableList<DebuggerSession>?) {
                         executeConfiguration(configuration, contentManager)
                     }

@@ -4,7 +4,6 @@ import com.beust.jcommander.JCommander
 import com.jetbrains.rd.util.printlnError
 import org.testng.CommandLineArgs
 import java.io.*
-import java.net.InetAddress
 import java.net.Socket
 import kotlin.system.exitProcess
 
@@ -24,7 +23,7 @@ fun kotlinMain(args: Array<String>) {
     val port = args.find { it.startsWith(socketArgPrefix) }!!
         .substring(socketArgPrefix.length).toInt()
     while (true) {
-        Socket(InetAddress.getByName("127.0.0.1"), port).use { socket ->
+        Socket("127.0.0.1", port).use { socket ->
             val socketIS = DataInputStream(socket.getInputStream())
             val socketOS = DataOutputStream(socket.getOutputStream())
             val filenameWithTestSuitePath = socketIS.readUTF()

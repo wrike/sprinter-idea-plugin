@@ -4,7 +4,6 @@ import com.intellij.execution.application.JvmMainMethodRunConfigurationOptions
 import com.intellij.execution.configurations.ConfigurationTypeUtil
 import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.configurations.SimpleConfigurationType
-import com.intellij.icons.AllIcons
 import com.intellij.openapi.components.BaseState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.NotNullLazyValue
@@ -15,7 +14,7 @@ class SharedJvmConfigurationType: SimpleConfigurationType(
     "SharedJvmForTests",
     "SharedJvmForTests",
     null,
-    NotNullLazyValue.createValue { AllIcons.RunConfigurations.Application }) {
+    NotNullLazyValue.createValue { PluginIcons.Logo }) {
     override fun isEditableInDumbMode(): Boolean = true
 
     override fun getOptionsClass(): Class<out BaseState> {

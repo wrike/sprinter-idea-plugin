@@ -1,9 +1,8 @@
 package com.wrike.sprinter
 
-import com.intellij.execution.JavaRunConfigurationBase
+import com.intellij.execution.JavaTestConfigurationBase
 import com.intellij.execution.RunManager
 import com.intellij.execution.actions.ConfigurationContext
-import com.intellij.execution.actions.ConfigurationFromContext
 import com.intellij.execution.actions.ConfigurationFromContextImpl
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.execution.junit.JavaRunConfigurationProducerBase
@@ -26,12 +25,12 @@ class SharedJvmConfigurationProducer: JavaRunConfigurationProducerBase<SharedJvm
         val psiElement = sourceElement.get()
         val testFrameworks = testFrameworkForRunningInSharedJVMExtensionPoint.extensionList
         val applicableTestFramework = testFrameworks.find { it.canRunTestsFor(psiElement) } ?: return false
-        sourceElement.set(psiElement.containingFile)
         val module = ModuleUtil.findModuleForPsiElement(psiElement) ?: return false
+        sourceElement.set(psiElement.containingFile)
         configuration.setModule(module)
         configuration.hotSwapAgentPluginsModules = getModulesWithHotSwapAgentPluginsService(context.project).getModules()
+        configuration.name = module.name
         configuration.testFrameworkId = applicableTestFramework.frameworkId
-        configuration.name = "${module.name}-${applicableTestFramework.frameworkId}"
         return true
     }
 
@@ -43,13 +42,18 @@ class SharedJvmConfigurationProducer: JavaRunConfigurationProducerBase<SharedJvm
         } ?: false
     }
 
-    fun getConfigurationFromConfigurationToExecute(configurationToExecute: JavaRunConfigurationBase): ConfigurationFromContext {
+    fun getConfigurationFromConfigurationToExecute(configurationToExecute: JavaTestConfigurationBase): ConfigurationFromContextImpl {
+        val testFrameworks = testFrameworkForRunningInSharedJVMExtensionPoint.extensionList
+        val applicableTestFramework = testFrameworks.find { it.canRunTestsFor(configurationToExecute) } ?: throw IllegalStateException()
         val configuration = SharedJvmConfiguration(configurationToExecute.project)
         val module = configurationToExecute.modules[0]
         configuration.setModule(module)
         configuration.hotSwapAgentPluginsModules = getModulesWithHotSwapAgentPluginsService(configurationToExecute.project).getModules()
         configuration.name = module.name
-        val runAndConfigSettings = RunManager.getInstance(configurationToExecute.project).createConfiguration(configuration, configurationFactory)
-        return ConfigurationFromContextImpl(this, runAndConfigSettings, null)
+        configuration.testFrameworkId = applicableTestFramework.frameworkId
+        configuration.initialConfiguration = configurationToExecute
+        val runnerAndConfiguration = RunManager.getInstance(configurationToExecute.project)
+            .createConfiguration(configuration, getSharedJvmConfigurationTypeInstance())
+        return ConfigurationFromContextImpl(this, runnerAndConfiguration, null)
     }
 }

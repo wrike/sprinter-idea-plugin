@@ -17,6 +17,7 @@ class FakelyTerminatedProcessHandler(
         inputStream.flush()
         inputStream.close()
         notifyProcessTerminated(0)
+        listeners.forEach(process::removeProcessListener)
     }
 
     override fun detachProcessImpl() {

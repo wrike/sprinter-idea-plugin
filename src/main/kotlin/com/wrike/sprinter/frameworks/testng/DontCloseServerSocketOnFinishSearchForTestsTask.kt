@@ -28,7 +28,7 @@ class DontCloseServerSocketOnFinishSearchForTestNGTestsTask(
             socketOS.writeUTF(tempFile.absolutePath)
             socketIS.readBoolean()
         } catch (e: Throwable) {
-            log.info(e)
+            log.warn(e)
         } finally {
             try {
                 mySocket.close()

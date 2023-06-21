@@ -5,7 +5,7 @@ import com.intellij.execution.impl.RunManagerImpl
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 
-interface ConfigurationsWithHotswapAgentService: Disposable {
+interface ConfigurationsToAttachHAService: Disposable {
     fun getConfigurations(): List<RunnerAndConfigurationSettings>
     fun getConfigurationIds(): Set<String>
     fun setConfigurations(configurations: List<RunnerAndConfigurationSettings>)
@@ -15,16 +15,16 @@ interface ConfigurationsWithHotswapAgentService: Disposable {
     fun delete(configurationId: String)
 }
 
-class ConfigurationsWithHotswapAgentServiceImpl(
+class ConfigurationsToAttachHAServiceImpl(
     private val project: Project
-) : ConfigurationsWithHotswapAgentService {
-    private val configurationsWithHotswapAgent = getConfigurationsWithHotswapAgentSettings(project)
+) : ConfigurationsToAttachHAService {
+    private val sharedSettings = getSharedSprinterSettings(project)
 
     override fun getConfigurations(): List<RunnerAndConfigurationSettings> {
-        if (configurationsWithHotswapAgent.configurationIds.isEmpty()) return emptyList()
+        if (sharedSettings.configurationsToAttachHA.isEmpty()) return emptyList()
         val runManager = RunManagerImpl.getInstanceImpl(project)
         val removedConfigurationIds = mutableSetOf<String>()
-        val result = configurationsWithHotswapAgent.configurationIds.asSequence()
+        val result = sharedSettings.configurationsToAttachHA.asSequence()
             .map {
                 val configuration = runManager.getConfigurationById(it)
                 if (configuration == null) {
@@ -34,17 +34,17 @@ class ConfigurationsWithHotswapAgentServiceImpl(
             }
             .filterNotNull()
             .toList()
-        configurationsWithHotswapAgent.configurationIds.removeAll(removedConfigurationIds)
+        sharedSettings.configurationsToAttachHA.removeAll(removedConfigurationIds)
         return result
     }
 
     override fun getConfigurationIds(): Set<String> {
-        return configurationsWithHotswapAgent.configurationIds
+        return sharedSettings.configurationsToAttachHA
     }
 
     override fun setConfigurations(configurations: List<RunnerAndConfigurationSettings>) {
-        configurationsWithHotswapAgent.configurationIds.clear()
-        configurationsWithHotswapAgent.configurationIds.addAll(
+        sharedSettings.configurationsToAttachHA.clear()
+        sharedSettings.configurationsToAttachHA.addAll(
             configurations.asSequence()
                 .map(RunnerAndConfigurationSettings::getUniqueID)
                 .toSet()
@@ -52,26 +52,26 @@ class ConfigurationsWithHotswapAgentServiceImpl(
     }
 
     override fun hasConfiguration(configuration: RunnerAndConfigurationSettings): Boolean {
-        return configurationsWithHotswapAgent.configurationIds.contains(configuration.uniqueID)
+        return sharedSettings.configurationsToAttachHA.contains(configuration.uniqueID)
     }
 
     override fun hasConfiguration(configurationId: String): Boolean {
-        return configurationsWithHotswapAgent.configurationIds.contains(configurationId)
+        return sharedSettings.configurationsToAttachHA.contains(configurationId)
     }
 
     override fun update(previousConfigurationId: String, configuration: RunnerAndConfigurationSettings) {
-        if (configurationsWithHotswapAgent.configurationIds.remove(previousConfigurationId)) {
-            configurationsWithHotswapAgent.configurationIds.add(configuration.uniqueID)
+        if (sharedSettings.configurationsToAttachHA.remove(previousConfigurationId)) {
+            sharedSettings.configurationsToAttachHA.add(configuration.uniqueID)
         }
     }
 
     override fun delete(configurationId: String) {
-        configurationsWithHotswapAgent.configurationIds.remove(configurationId)
+        sharedSettings.configurationsToAttachHA.remove(configurationId)
     }
 
     override fun dispose() {}
 }
 
-fun getConfigurationsWithHotswapAgentService(project: Project): ConfigurationsWithHotswapAgentService {
-    return project.getService(ConfigurationsWithHotswapAgentService::class.java)
+fun getConfigurationsWithHotswapAgentService(project: Project): ConfigurationsToAttachHAService {
+    return project.getService(ConfigurationsToAttachHAService::class.java)
 }

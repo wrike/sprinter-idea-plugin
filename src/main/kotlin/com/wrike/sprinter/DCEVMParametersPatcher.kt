@@ -8,7 +8,7 @@ import com.intellij.execution.impl.RunnerAndConfigurationSettingsImpl
 import com.intellij.execution.runners.JavaProgramPatcher
 import com.wrike.sprinter.settings.getConfigurationsWithHotswapAgentService
 
-class HotswapAgentVMParametersPatcher: JavaProgramPatcher() {
+class DCEVMParametersPatcher: JavaProgramPatcher() {
     override fun patchJavaParameters(executor: Executor, configuration: RunProfile, params: JavaParameters) {
         if (configuration !is RunConfigurationBase<*> || !isApplicable(configuration)) return
         getHotswapAgentJavaArgumentsProvider(configuration.project).addArguments(params)

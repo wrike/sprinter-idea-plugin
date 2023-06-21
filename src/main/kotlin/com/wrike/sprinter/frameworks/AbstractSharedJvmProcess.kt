@@ -8,15 +8,16 @@ import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.testframework.JavaAwareTestConsoleProperties
-import com.intellij.execution.testframework.SearchForTestsTask
 import com.intellij.execution.testframework.TestConsoleProperties
 import com.intellij.execution.testframework.TestProxyRoot
 import com.intellij.execution.testframework.sm.SMTestRunnerConnectionUtil
 import com.intellij.execution.testframework.sm.runner.ui.SMTRunnerConsoleView
-import com.intellij.execution.testframework.ui.BaseTestsOutputConsoleView
+import com.intellij.execution.ui.ConsoleView
+import com.intellij.execution.ui.layout.LayoutViewOptions
+import com.intellij.execution.ui.layout.ViewContext
+import com.intellij.ide.DataManager
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.impl.BackgroundableProcessIndicator
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.ui.content.Content
@@ -29,7 +30,7 @@ abstract class AbstractSharedJvmProcess(
     protected val process: OSProcessHandler,
     protected val serverSocket: ServerSocket,
     protected val executor: Executor
-): Disposable {
+) : Disposable {
     private var previousConsoleView: Content? = null
 
     init {
@@ -44,29 +45,29 @@ abstract class AbstractSharedJvmProcess(
 
     fun executeConfiguration(configuration: JavaTestConfigurationBase, consoleAttacher: ContentManager) {
         val fakeProcessHandler = FakelyTerminatedProcessHandler(process)
-        createTestConsole(configuration, fakeProcessHandler, consoleAttacher)
+        val console = createTestConsole(configuration, fakeProcessHandler, consoleAttacher)
         fakeProcessHandler.startNotify()
-        val searchTask = createTestSearchTask(configuration)
-        val progressIndicator = BackgroundableProcessIndicator(searchTask)
-        ProgressManager.getInstance().runProcess({ searchTask.run(progressIndicator) }, progressIndicator)
-        searchTask.finish()
-        fakeProcessHandler.destroyProcess()
+        runTests(configuration)
+        ApplicationManager.getApplication().invokeLater {
+            console.performWhenNoDeferredOutput {
+                fakeProcessHandler.destroyProcess()
+            }
+        }
     }
 
-    protected abstract fun createTestSearchTask(configuration: JavaTestConfigurationBase): SearchForTestsTask
+    protected abstract fun runTests(configuration: JavaTestConfigurationBase)
 
     protected open fun createTestConsole(
         configuration: JavaTestConfigurationBase,
         processHandler: ProcessHandler,
         consoleAttacher: ContentManager
-    ) {
+    ): ConsoleView {
         val consoleProperties = createConsoleProperties(configuration, executor)
         consoleProperties.setIfUndefined(TestConsoleProperties.HIDE_PASSED_TESTS, false)
-        consoleProperties.isIdBasedTestTree = false
-        val testConsole = UIUtil.invokeAndWaitIfNeeded<BaseTestsOutputConsoleView> {
+        val testConsole = UIUtil.invokeAndWaitIfNeeded<SMTRunnerConsoleView> {
             SMTestRunnerConnectionUtil.createConsole(consoleProperties)
         }
-        val resultsViewer = (testConsole as SMTRunnerConsoleView).resultsViewer
+        val resultsViewer = testConsole.resultsViewer
         val consoleView = JavaRunConfigurationExtensionManager.instance.decorateExecutionConsole(
             configuration,
             null,
@@ -90,11 +91,22 @@ abstract class AbstractSharedJvmProcess(
             previousConsoleView?.let { consoleAttacher.removeContent(it, true) }
             consoleAttacher.addContent(newConsoleTab)
             consoleAttacher.setSelectedContent(newConsoleTab, true)
+            makeFocusOnProcessStartup(newConsoleTab)
             previousConsoleView = newConsoleTab
         }
+        return testConsole
     }
 
-    protected abstract fun createConsoleProperties(configuration: JavaTestConfigurationBase, executor: Executor): JavaAwareTestConsoleProperties<out JavaTestConfigurationBase>
+    private fun makeFocusOnProcessStartup(newConsoleTab: ContentImpl) {
+        val viewContext = ViewContext.CONTEXT_KEY.getData(DataManager.getInstance().getDataContext(newConsoleTab.component))
+        viewContext?.runnerLayoutUi?.options?.setToFocus(newConsoleTab, LayoutViewOptions.STARTUP)
+    }
+
+    protected abstract fun createConsoleProperties(
+        configuration: JavaTestConfigurationBase,
+        executor: Executor
+    ): JavaAwareTestConsoleProperties<out JavaTestConfigurationBase>
+
     protected abstract fun customizeConsoleTab(consoleTab: Content)
 
     override fun dispose() {

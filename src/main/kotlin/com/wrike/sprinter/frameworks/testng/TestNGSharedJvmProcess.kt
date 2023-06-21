@@ -4,6 +4,8 @@ import com.intellij.execution.Executor
 import com.intellij.execution.JavaTestConfigurationBase
 import com.intellij.execution.process.OSProcessHandler
 import com.intellij.execution.testframework.SearchForTestsTask
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.impl.BackgroundableProcessIndicator
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.ui.content.Content
 import com.theoryinpractice.testng.configuration.TestNGConfiguration
@@ -22,7 +24,14 @@ class TestNGSharedJvmProcess(
     override fun supportsConfiguration(configuration: JavaTestConfigurationBase) =
         testFramework.canRunTestsFor(configuration)
 
-    override fun createTestSearchTask(configuration: JavaTestConfigurationBase): SearchForTestsTask {
+    override fun runTests(configuration: JavaTestConfigurationBase) {
+        val searchTask = createTestSearchTask(configuration)
+        val progressIndicator = BackgroundableProcessIndicator(searchTask)
+        ProgressManager.getInstance().runProcess({ searchTask.run(progressIndicator) }, progressIndicator)
+        searchTask.finish()
+    }
+
+    private fun createTestSearchTask(configuration: JavaTestConfigurationBase): SearchForTestsTask {
         val tempFile = FileUtil.createTempFile("idea_sharedjvm_testng", ".tmp", true)
         return DontCloseServerSocketOnFinishSearchForTestNGTestsTask(serverSocket, configuration as TestNGConfiguration, tempFile)
     }

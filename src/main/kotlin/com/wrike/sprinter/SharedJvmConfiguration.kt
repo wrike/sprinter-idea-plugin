@@ -1,16 +1,21 @@
 package com.wrike.sprinter
 
-import com.intellij.execution.Executor
-import com.intellij.execution.JavaRunConfigurationBase
-import com.intellij.execution.ShortenCommandLine
+import com.intellij.execution.*
 import com.intellij.execution.application.ApplicationConfiguration.onAlternativeJreChanged
-import com.intellij.execution.configurations.*
+import com.intellij.execution.configurations.ConfigurationFactory
+import com.intellij.execution.configurations.JavaRunConfigurationModule
+import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.execution.testframework.TestSearchScope
+import com.intellij.execution.testframework.sm.runner.SMTRunnerConsoleProperties
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.text.StringUtil.isEmptyOrSpaces
+import com.intellij.psi.PsiClass
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiMethod
 import com.intellij.util.PathUtil
 import com.wrike.sprinter.frameworks.TestFrameworkId
 import com.wrike.sprinter.frameworks.testFrameworkForRunningInSharedJVMExtensionPoint
@@ -20,18 +25,17 @@ class SharedJvmConfiguration internal constructor(
     name: String?,
     project: Project,
     factory: ConfigurationFactory,
-): JavaRunConfigurationBase(name, JavaRunConfigurationModule(project, true), factory) {
+): JavaTestConfigurationBase(name, JavaRunConfigurationModule(project, true), factory) {
     var testFrameworkId: TestFrameworkId
         get() = options.testFrameworkId!!
         set(value) {
             options.testFrameworkId = value
         }
-    val runClassFQN: String by lazy(LazyThreadSafetyMode.NONE) {
-        testFrameworkForRunningInSharedJVMExtensionPoint.extensionList.find {
-            it.frameworkId == testFrameworkId
-        }!!.getRunClassFQN()
-    }
+    var initialConfiguration: JavaTestConfigurationBase? = null
     var hotSwapAgentPluginsModules = listOf<Module>()
+
+    private lateinit var testSearchScope: TestSearchScope
+
 
     constructor(project: Project) : this(null, project, getSharedJvmConfigurationTypeInstance())
 
@@ -47,8 +51,11 @@ class SharedJvmConfiguration internal constructor(
         return SharedJvmSettingEditor(this)
     }
 
-    override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState {
-        return SharedJvmRunnableState(environment, this, testFrameworkId)
+    override fun getState(executor: Executor, environment: ExecutionEnvironment): JavaTestFrameworkRunnableState<out JavaTestConfigurationBase>? {
+        val presentInitialConfiguration = initialConfiguration ?: return null
+        val testFramework = testFrameworkForRunningInSharedJVMExtensionPoint.extensionList
+            .find { it.frameworkId == testFrameworkId } ?: throw IllegalStateException("Test framework with id($testFrameworkId) is not found")
+        return testFramework.createRunnableState(this, presentInitialConfiguration, environment)
     }
 
     override fun getValidModules(): MutableCollection<Module> {
@@ -129,13 +136,9 @@ class SharedJvmConfiguration internal constructor(
         return options.vmParameters
     }
 
-    override fun getRunClass(): String {
-        return runClassFQN
-    }
+    override fun getRunClass() = null
 
-    override fun getPackage(): String? {
-        return null
-    }
+    override fun getPackage() = null
 
     override fun getShortenCommandLine(): ShortenCommandLine? {
         return options.shortenClasspath
@@ -143,5 +146,34 @@ class SharedJvmConfiguration internal constructor(
 
     override fun setShortenCommandLine(mode: ShortenCommandLine?) {
         options.shortenClasspath = mode
+    }
+
+    override fun getRefactoringElementListener(element: PsiElement?) = null
+
+    override fun createTestConsoleProperties(executor: Executor): SMTRunnerConsoleProperties {
+        throw IllegalStateException("Not expected to be called")
+    }
+
+    override fun bePatternConfiguration(classes: MutableList<PsiClass>, method: PsiMethod) {
+        throw IllegalStateException("Not expected to be called")
+    }
+
+    override fun beMethodConfiguration(elemenet: Location<PsiMethod>?) {
+        throw IllegalStateException("Not expected to be called")
+    }
+
+    override fun beClassConfiguration(element: PsiClass) {
+        throw IllegalStateException("Not expected to be called")
+    }
+
+    override fun isConfiguredByElement(element: PsiElement?): Boolean {
+        throw IllegalStateException("Not expected to be called")
+    }
+
+    override fun getTestType(): String = ""
+
+    override fun getTestSearchScope(): TestSearchScope = testSearchScope
+    override fun setSearchScope(scope: TestSearchScope) {
+        testSearchScope = scope
     }
 }
