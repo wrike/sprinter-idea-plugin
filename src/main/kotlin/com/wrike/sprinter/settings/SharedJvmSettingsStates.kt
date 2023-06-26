@@ -35,6 +35,9 @@ enum class UsedJvmType {
     storages = [Storage("sprinter/SharedSettings.xml")]
 )
 class SharedSprinterSettingsState : PersistentStateComponent<SharedSprinterSettingsState> {
+    var passEnvironmentVariablesFromOriginalConfig = false
+    var passSystemPropsFromOriginalConfig = false
+    var passCMDArgsFromOriginalConfig = false
     var additionalJvmParameters = "-XX:+AllowEnhancedClassRedefinition -XX:-MaxFDLimit"
     var hotswapProperties = ""
     var hotswapAgentCMDArguments = ""
@@ -50,5 +53,5 @@ class SharedSprinterSettingsState : PersistentStateComponent<SharedSprinterSetti
     }
 }
 
-fun getSharedSprinterSettings(project: Project) = project.getService(SharedSprinterSettingsState::class.java)
-fun getLocalSprinterSettings(project: Project) = project.getService(LocalSprinterSettingsState::class.java)
+fun getSharedSprinterSettings(project: Project): SharedSprinterSettingsState = project.getService(SharedSprinterSettingsState::class.java)
+fun getLocalSprinterSettings(project: Project): LocalSprinterSettingsState = project.getService(LocalSprinterSettingsState::class.java)

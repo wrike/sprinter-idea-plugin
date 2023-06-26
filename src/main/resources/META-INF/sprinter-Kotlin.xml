@@ -1,0 +1,5 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <runLineMarkerContributor language="kotlin" implementationClass="com.wrike.sprinter.KotlinSameJvmRunLineMarkerContributor"/>
+    </extensions>
+</idea-plugin>

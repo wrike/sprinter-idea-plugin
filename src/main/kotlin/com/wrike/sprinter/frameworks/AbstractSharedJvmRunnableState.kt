@@ -20,6 +20,7 @@ import com.intellij.util.PathUtil
 import com.wrike.sprinter.SharedJvmConfiguration
 import com.wrike.sprinter.SharedJvmExecutorService
 import com.wrike.sprinter.getHotswapAgentJavaArgumentsProvider
+import com.wrike.sprinter.settings.SharedSprinterSettingsState
 import com.wrike.sprinter.settings.getSharedSprinterSettings
 import java.io.File
 import java.nio.file.Files
@@ -66,6 +67,9 @@ abstract class AbstractSharedJvmRunnableState<C: JavaTestConfigurationBase, F: T
 
     override fun createJavaParameters(): JavaParameters {
         val parameters = super.createJavaParameters()
+        val settings = getSharedSprinterSettings(environment.project)
+        addVmParametersFromInitialConfigIfNeeded(parameters, settings)
+        addEnvsFromInitialConfigIfNeeded(parameters, settings)
 
         parameters.mainClass = mainClassName
 
@@ -79,6 +83,30 @@ abstract class AbstractSharedJvmRunnableState<C: JavaTestConfigurationBase, F: T
     }
 
     protected abstract val mainClassName: String
+
+    protected fun addVmParametersFromInitialConfigIfNeeded(
+        parameters: JavaParameters,
+        settings: SharedSprinterSettingsState
+    ) {
+        if (settings.passSystemPropsFromOriginalConfig) {
+            ParametersList.parse(initialTestConfiguration.vmParameters)
+                .asSequence()
+                .filter { !parameters.vmParametersList.hasParameter(it) }
+                .forEach(parameters.vmParametersList::add)
+        }
+    }
+
+    protected fun addEnvsFromInitialConfigIfNeeded(
+        parameters: JavaParameters,
+        settings: SharedSprinterSettingsState
+    ) {
+        if (settings.passEnvironmentVariablesFromOriginalConfig) {
+            val resultingEnv = mutableMapOf<String, String>()
+            resultingEnv.putAll(initialTestConfiguration.envs)
+            resultingEnv.putAll(parameters.env)
+            parameters.env = resultingEnv
+        }
+    }
 
     override fun configureRTClasspath(parameters: JavaParameters, module: Module) {
         parameters.classPath.addFirst(PathUtil.getJarPathForClass(ULong::class.java))

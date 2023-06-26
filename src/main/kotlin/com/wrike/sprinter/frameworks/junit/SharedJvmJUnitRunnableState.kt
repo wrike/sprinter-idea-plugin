@@ -30,7 +30,6 @@ class SharedJvmJUnitRunnableState(
         val parametersForTestObject = testObject.javaParameters
         testObject.downloadAdditionalDependencies(parametersForTestObject)
 
-
         parameters.classPath.addAll(parametersForTestObject.classPath.pathList)
         parameters.programParametersList.addAll(parametersForTestObject.programParametersList.parameters)
         return parameters

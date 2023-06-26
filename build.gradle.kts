@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.wrike"
-version = "1.1.0"
+version = "1.2.0"
 
 repositories {
     mavenCentral()
@@ -22,7 +22,8 @@ intellij {
     plugins.set(listOf(
         "com.intellij.java",
         "TestNG-J",
-        "JUnit"
+        "JUnit",
+        "org.jetbrains.kotlin",
     ))
 }
 

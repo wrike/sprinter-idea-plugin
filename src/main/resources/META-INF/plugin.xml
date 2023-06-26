@@ -7,7 +7,7 @@
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
     <name>Sprinter</name>
 
-    <version>1.1.0</version>
+    <version>1.2.0</version>
 
     <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
     <vendor>Wrike</vendor>
@@ -40,8 +40,9 @@
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
-    <depends>TestNG-J</depends>
-    <depends>JUnit</depends>
+    <depends optional="true" config-file="sprinter-TestNGJ.xml">TestNG-J</depends>
+    <depends optional="true" config-file="sprinter-JUnit.xml">JUnit</depends>
+    <depends optional="true" config-file="sprinter-Kotlin.xml">org.jetbrains.kotlin</depends>
 
     <extensionPoints>
         <extensionPoint name="testFrameworkForRunningInSharedJVM"
@@ -65,7 +66,7 @@
             parentId="tools"
             instance="com.wrike.sprinter.settings.SharedJvmSettingsConfigurable"
             id="com.wrike.sprinter.settings.SharedJvmSettingsConfigurable"
-            displayName="Shared JVM Settings"/>
+            displayName="Sprinter Settings"/>
         <java.programPatcher implementation="com.wrike.sprinter.DCEVMParametersPatcher"/>
 
         <projectService serviceImplementation="com.wrike.sprinter.settings.SharedSprinterSettingsState"/>
@@ -74,11 +75,6 @@
                         serviceImplementation="com.wrike.sprinter.settings.ModulesWithHotSwapAgentPluginsServiceImpl"/>
         <projectService serviceInterface="com.wrike.sprinter.settings.ConfigurationsToAttachHAService"
                         serviceImplementation="com.wrike.sprinter.settings.ConfigurationsToAttachHAServiceImpl"/>
-    </extensions>
-
-    <extensions defaultExtensionNs="com.wrike.sprinter">
-        <testFrameworkForRunningInSharedJVM implementation="com.wrike.sprinter.frameworks.testng.TestNGForRunningInSharedJVM"/>
-        <testFrameworkForRunningInSharedJVM implementation="com.wrike.sprinter.frameworks.junit.JUnitForRunningInSharedJvm"/>
     </extensions>
 
     <projectListeners>

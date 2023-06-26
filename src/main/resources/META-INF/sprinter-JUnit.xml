@@ -1,0 +1,5 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="com.wrike.sprinter">
+        <testFrameworkForRunningInSharedJVM implementation="com.wrike.sprinter.frameworks.junit.JUnitForRunningInSharedJvm"/>
+    </extensions>
+</idea-plugin>

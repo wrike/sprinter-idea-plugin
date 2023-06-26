@@ -37,8 +37,11 @@ class TestNGForRunningInSharedJVM: TestFrameworkForRunningInSharedJVM {
     }
 
     override fun canRunTestsFor(element: PsiElement): Boolean {
-        if (element !is PsiIdentifier) return false
-        if (isTestClass(element) && isTestMethod(element)) return true
+        if (element !is PsiIdentifier
+            && element !is PsiClass
+            && element !is PsiMethod
+        ) return false
+        if (isTestClass(element) || isTestMethod(element)) return true
         return when (val parent = element.parent) {
             is PsiClass -> isTestClass(parent)
             is PsiMethod -> isTestMethod(parent)

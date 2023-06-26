@@ -27,6 +27,23 @@ import javax.swing.ListSelectionModel
 fun createSharedJvmSettingPanel(project: Project): DialogPanel = panel {
     val localSettings = getLocalSprinterSettings(project)
     val sharedSettings = getSharedSprinterSettings(project)
+    groupRowsRange("Inherit Configuration Values From Test Configuration", indent = false) {
+        row {
+            checkBox("Environment variables")
+                .align(Align.FILL)
+                .bindSelected(sharedSettings::passEnvironmentVariablesFromOriginalConfig)
+        }
+        row {
+            checkBox("System properties")
+                .align(Align.FILL)
+                .bindSelected(sharedSettings::passSystemPropsFromOriginalConfig)
+        }
+        row {
+            checkBox("Command line arguments")
+                .align(Align.FILL)
+                .bindSelected(sharedSettings::passCMDArgsFromOriginalConfig)
+        }
+    }
     lateinit var usedJvmTypePicker: Cell<ComboBox<UsedJvmType>>
     row {
         usedJvmTypePicker = comboBox(UsedJvmType.values().toList())

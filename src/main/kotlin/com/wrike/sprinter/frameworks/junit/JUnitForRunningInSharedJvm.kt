@@ -40,7 +40,10 @@ class JUnitForRunningInSharedJvm : TestFrameworkForRunningInSharedJVM {
     }
 
     override fun canRunTestsFor(element: PsiElement): Boolean {
-        if (element !is PsiIdentifier) return false
+        if (element !is PsiIdentifier
+            && element !is PsiClass
+            && element !is PsiMethod
+        ) return false
         return originalTestFrameworks.any {
             if (isTestClass(it, element) || isTestMethod(it, element)) {
                 true
