@@ -18,23 +18,9 @@
     <description><![CDATA[
     <b>Problem it tries to solve:</b> long test initialization step (when using spring for example)<br>
     <b>How does this plugin solve the problem:</b> does not shut down JVM after tests are completed, run next ones in launched jvm. For active development or debugging hotswap features can be utilized.<br>
-
-    <b>How does it work:</b>
-    <ol>
-        <li>Find test you want to run.</li>
-        <li>Click on run test button near the line counter. You should see “Run in Launched JVM” option. Click on it.  Firstly, it will launch JVM with debugger and after that launch test itself.</li>
-        <li>If you click it again after tests are completed
-        <ol>
-            <li>Incremental compile + hotswap will happen</li>
-            <li>Tests are executed without spring context refresh. Time is saved!</li>
-        </ol>
-        </li>
-    </ol>
-
-    <b>This plugin assumes, that you are using DCEVM with HotSwapAgent.</b><br>
-    To install it with JVM-17 and HotSwapAgent use this <a href="https://github.com/HotswapProjects/HotswapAgent/blob/master/README.md">instruction</a>
-    Please, check that hotswap-agent.jar is accessible exactly under this path <JVM>/lib/hotswap/hotswap-agent.jar
-  ]]></description>
+    The plugin can be configured to work with DCEVM and HotSwap Agent.<br>
+    Checkout <a href="https://github.com/wrike/sprinter-idea-plugin">repository</a> for more information.
+ ]]></description>
 
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
