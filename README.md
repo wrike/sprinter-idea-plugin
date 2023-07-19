@@ -27,6 +27,7 @@ In this case IDEA will run test using this command: `gradle test`. And to my kno
 ## How does it work?
 
 First of all, you should choose a test you want to run. You will see a new option added in a dropdown with run options (see screenshot).
+
 !["Run in Launched JVM" new option](imgs/test_run_option.png)
 
 Just for example’s sake, let's assume that you are using Spring Framework in your project.
