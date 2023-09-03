@@ -17,8 +17,8 @@
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
     <description><![CDATA[
     <b>Problem it tries to solve:</b> long test initialization step (when using spring for example)<br>
-    <b>How does this plugin solve the problem:</b> does not shut down JVM after tests are completed, run next ones in launched jvm. For active development or debugging hotswap features can be utilized.<br>
-    The plugin can be configured to work with DCEVM and HotSwap Agent.<br>
+    <b>How does this plugin solve the problem:</b> does not shut down JVM after tests are completed, run next ones in launched JVM. For active development or debugging hotswap features can be utilized.<br>
+    The plugin can be configured to work with DCEVM and Hotswap Agent.<br>
     Checkout <a href="https://github.com/wrike/sprinter-idea-plugin">repository</a> for more information.
  ]]></description>
 
