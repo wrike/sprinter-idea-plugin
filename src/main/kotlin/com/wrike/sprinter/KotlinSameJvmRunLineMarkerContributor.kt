@@ -27,7 +27,7 @@ class KotlinSameJvmRunLineMarkerContributor: RunLineMarkerContributor() {
         if (!RootKindFilter.projectAndLibrarySources.matches(element) || element.containingFile !is KtFile) {
             return null
         }
-        val testEntity = JunitKotlinTestFrameworkProvider.getJavaTestEntity(element, checkMethod = true) ?: return null
+        val testEntity = JunitKotlinTestFrameworkProvider.getInstance().getJavaTestEntity(element, checkMethod = true) ?: return null
         val testMethod = testEntity.testMethod
         val canRunTestsForElement = testFrameworkForRunningInSharedJVMExtensionPoint.extensionList.any {
             if (testMethod != null) {
