@@ -66,7 +66,7 @@ class CompileModulesForRunningConfigurationsAction : CompileActionBase() {
             .groupBy { configuration ->
                 JavaParametersUtil.getClasspathType(
                     configuration.configurationModule,
-                    configuration.runClass,
+                    configuration.runClass!!,
                     false,
                     true
                 ) and JavaParameters.TESTS_ONLY != 0
