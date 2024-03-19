@@ -82,6 +82,10 @@ abstract class AbstractSharedJvmRunnableState<C: JavaTestConfigurationBase, F: T
         return parameters
     }
 
+    override fun isReadActionRequired(): Boolean {
+        return true
+    }
+
     protected abstract val mainClassName: String
 
     protected fun addVmParametersFromInitialConfigIfNeeded(

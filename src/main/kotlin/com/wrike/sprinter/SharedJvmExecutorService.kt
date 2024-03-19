@@ -119,7 +119,8 @@ class SharedJvmExecutorServiceImpl(
             val configuration = settings.configuration
             configuration is SharedJvmConfiguration && configuration.modules.toSet().containsAll(testConfigModules)
         }
-        val allDescriptors = executionManager.getRunningDescriptors { settings -> settings.configuration is SharedJvmConfiguration }
+        val allDescriptors =
+            executionManager.getRunningDescriptors { settings -> settings.configuration is SharedJvmConfiguration }
         val areRunningDescriptorsAppropriate = descriptorsWithAppropriateModule == allDescriptors
         return Pair(areRunningDescriptorsAppropriate, allDescriptors)
     }
@@ -147,7 +148,8 @@ class SharedJvmExecutorServiceImpl(
         project: Project,
     ) {
         val configurationProducer = RunConfigurationProducer.getInstance(SharedJvmConfigurationProducer::class.java)
-        val sharedJvmConfiguration = configurationProducer.findOrCreateConfigurationFromContext(context) ?: configurationProducer.getConfigurationFromConfigurationToExecute(configurationToExecute)
+        val sharedJvmConfiguration = configurationProducer.findOrCreateConfigurationFromContext(context)
+            ?: configurationProducer.getConfigurationFromConfigurationToExecute(configurationToExecute)
         val configuration = sharedJvmConfiguration.configurationSettings.configuration as SharedJvmConfiguration
         configuration.initialConfiguration = configurationToExecute
         val runManager = RunManager.getInstance(project)
@@ -162,7 +164,7 @@ class SharedJvmExecutorServiceImpl(
             runManager.setTemporaryConfiguration(sharedJvmConfiguration.configurationSettings)
             ProgramRunnerUtil.executeConfigurationAsync(executionEnvironment, true, true) {
                 val debuggerSession = DebuggerManagerEx.getInstanceEx(project).context.debuggerSession
-                if (debuggerSession == null || debuggerSession.isStopped) return@executeConfigurationAsync
+                    ?: return@executeConfigurationAsync
                 val contentManager = debuggerSession.xDebugSession?.ui?.contentManager ?: return@executeConfigurationAsync
                 executeConfiguration(configurationToExecute, contentManager)
             }
